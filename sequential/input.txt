@@ -1,0 +1,7 @@
+ABCDE
+5
+ABC
+AB
+ZAB
+BAC
+ZZZZ
