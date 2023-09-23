@@ -37,7 +37,7 @@ void process(int** scoreMat, char** sequences, int numOfSequences) {
 
     int maxScore = compare(scoreMat, mainSequence, sequences[seq], currentSequenceLength, currentSequenceLength, 0);
     int maxScoreOffset = 0, maxScoreK = currentSequenceLength;
-    for (int currentOffset = 1; currentOffset <= offset; currentOffset++) {
+    for (int currentOffset = 0; currentOffset <= offset; currentOffset++) {
       for (int k = (currentSequenceLength - 1); k >= 0; k--) {
         int score = compare(scoreMat, mainSequence, sequences[seq], currentSequenceLength, k, currentOffset);
         if (score > maxScore) {
@@ -52,24 +52,22 @@ void process(int** scoreMat, char** sequences, int numOfSequences) {
 }
 
 int compare(int** scoreMat, char* str, char* other, int numberOfIterations, int shift, int offset) {
-  printf("Recevied %s, %s with arguments numberOfIterations: %d, offset: %d and k: %d\n", 
-  str, other, numberOfIterations, offset, shift);
   int scoreSum = 0;
   for (int i = 0; i < numberOfIterations; i++) {
     int rowIndex = str[i + offset] - 'A';
     int colIndex;
 
     if (i >= shift) {
-      colIndex = (other[i] + shift) - 'A';
+      colIndex = (other[i] + 1) - 'A';
     } else {
       colIndex = other[i] - 'A';
     }
-    if (colIndex > SCORE_TABLE_COLS) {
+    if (colIndex >= SCORE_TABLE_COLS) {
       colIndex -= SCORE_TABLE_COLS;
     }
 
     scoreSum += scoreMat[rowIndex][colIndex];
   }
-  printf("score: %d\n", scoreSum);
+
   return scoreSum;
 }

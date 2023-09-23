@@ -23,16 +23,16 @@ __global__ void calculate(char* mainSequence, int mainSequenceLength, char* sequ
   int colIndex;
 
   if (blockDim.x >= k) {
-    colIndex = (sequence[threadIdx.x] + k) - 'A';
+    colIndex = (sequence[threadIdx.x] + 1) - 'A';
   } else {
     colIndex = sequence[threadIdx.x] - 'A';
   }
 
-  if (colIndex > SCORE_TABLE_COLS) {
+  if (colIndex >= SCORE_TABLE_COLS) {
     colIndex -= SCORE_TABLE_COLS;
   }
 
-  score = scoreMat[(rowIndex * SCORE_TABLE_COLS) + colIndex];
+  int score = scoreMat[(rowIndex * SCORE_TABLE_COLS) + colIndex];
   results[threadIdx.x] = score;
 
   __syncthreads();
@@ -41,7 +41,8 @@ __global__ void calculate(char* mainSequence, int mainSequenceLength, char* sequ
   for (int i = 0 i < mainSequenceLength; i++) {
     sum += results[i];
   }
-  scoreIndex = k * blockDim.y + blockIdx.x;
+
+  int scoreIndex = k * blockDim.y + blockIdx.x;
   scorePayload[scoreIndex].score = sum;
   scorePayload[scoreIndex].offset = offset;
   scorePayload[scoreIndex].k = k;
