@@ -13,7 +13,7 @@ common.o: ../common/common.c
 mpi.o: mpi/helper.c
 	${CC} -c $< -o $@
 
-scoreCalculation.o: scoreCalculation.cu
+scoreCalculation.o: cuda/scoreCalculation.cu
 	${NVCC} -c ${NVFLAGS} $< -o $@
 
 main.o: main.c
