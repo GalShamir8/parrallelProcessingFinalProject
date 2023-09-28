@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <omp.h>
-#include "../..common/common.h"
+#include "../...common/common.h"
 
 typedef struct {
   int score;
