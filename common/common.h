@@ -10,6 +10,24 @@
 #define MAX_CHARACTERS_SEQ 2000
 #define ROOT_PROCESS_RANK 0
 
+typedef struct {
+  int scoreMat[SCORE_TABLE_ROWS][SCORE_TABLE_COLS];
+  char mainSequence[MAX_CHARACTERS_SEQ1];
+} InitializePayload;
+
+typedef struct {
+  char sequence[MAX_CHARACTERS_SEQ];
+  int index;
+} WorkerPayload;
+
+typedef struct {
+  int maxScore;
+  int offset;
+  int k;
+  int index;
+  char sequence[MAX_CHARACTERS_SEQ];
+} ResultPayload;
+
 /*
   @param filePath optional path to an input score configuration file or NULL for default
   @return matrix with scores for all the alphabetic characters combinations (incasesense 26 x 26)

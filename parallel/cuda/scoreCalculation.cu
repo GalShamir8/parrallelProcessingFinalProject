@@ -9,14 +9,6 @@ typedef struct {
   int k;
 } ScorePayload;
 
-typedef struct {
-  int maxScore;
-  int offset;
-  int k;
-  int index;
-  char sequence[MAX_CHARACTERS_SEQ];
-} ResultPayload;
-
 // Function declaration
 void calculateMaxAlignmentScore(char* mainSequence, char* sequence, ResultPayload *sendBuffer, int** scoreMat);
 
