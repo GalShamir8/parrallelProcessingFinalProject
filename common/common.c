@@ -91,6 +91,16 @@ void printMatrix(int** mat, int rows, int cols) {
   }
 }
 
+void printMatrix1D(int* mat, int rows, int cols) {
+  for (int row = 0; row < SCORE_TABLE_ROWS; row++) {
+    for (int col = 0; col < SCORE_TABLE_COLS; col++) {
+      int index = (row * cols) + col;
+      printf("%5d ", *(mat + index));
+    }
+    printf("\n");
+  }
+}
+
 void printSequeneces(char** mat, int numOfSec) {
   for (int i = 0; i < (numOfSec + 1); i++) {
     printf("%s\n", &mat[i][0]);

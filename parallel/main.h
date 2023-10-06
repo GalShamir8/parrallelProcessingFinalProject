@@ -1,5 +1,5 @@
 #include "mpi/helper.h"
-#include "cuda/scoreCalculation.cu"
+#include "cuda/score_calculation.h"
 // #define DEBUG
 
 enum tags { WORK, STOP, FINISH };

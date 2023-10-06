@@ -25,7 +25,7 @@ void createWorkerPayloadType(MPI_Datatype *type, int* blockLengths) {
 
 void createInitializePayloadType(MPI_Datatype *type, int* blockLengths) {
   MPI_Aint displacements[2];
-  MPI_Datatype types[2] = { MPI_CHAR, MPI_CHAR };
+  MPI_Datatype types[2] = { MPI_INT, MPI_CHAR };
 
   InitializePayload tmpType;
   MPI_Aint base_address;

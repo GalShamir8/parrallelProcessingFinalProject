@@ -11,12 +11,12 @@
 #define ROOT_PROCESS_RANK 0
 
 typedef struct {
-  int scoreMat[SCORE_TABLE_ROWS][SCORE_TABLE_COLS];
-  char mainSequence[MAX_CHARACTERS_SEQ1];
+  int* scoreMat;
+  char* mainSequence;
 } InitializePayload;
 
 typedef struct {
-  char sequence[MAX_CHARACTERS_SEQ];
+  char* sequence;
   int index;
 } WorkerPayload;
 
@@ -25,7 +25,7 @@ typedef struct {
   int offset;
   int k;
   int index;
-  char sequence[MAX_CHARACTERS_SEQ];
+  char* sequence;
 } ResultPayload;
 
 /*
@@ -49,4 +49,6 @@ char** readSeqInput(char* filePath, int* numOfSequences);
 void readLine(FILE* fileDescriptor, char* str, int maximumCharacters);
 
 void printMatrix(int** mat, int rows, int cols);
+void printMatrix1D(int* mat, int rows, int cols);
 void printSequeneces(char** mat, int numOfSec);
+

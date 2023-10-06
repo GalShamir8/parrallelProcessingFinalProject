@@ -12,22 +12,29 @@ int main(int argc, char** argv) {
 }
 
 void workerProcess(int rank) {
+  printf("in worker process: %d\n", rank);
   MPI_Datatype initializePayload;
   int initBlockLengths[2] = { SCORE_TABLE_ROWS * SCORE_TABLE_COLS, MAX_CHARACTERS_SEQ1 };
   createInitializePayloadType(&initializePayload, initBlockLengths);
 
   InitializePayload initBuffer;
+  initBuffer.scoreMat = (int*) malloc(SCORE_TABLE_ROWS * SCORE_TABLE_COLS * sizeof(int));
+  initBuffer.mainSequence = (char*) malloc( MAX_CHARACTERS_SEQ1);
   MPI_Bcast(&initBuffer, 1, initializePayload, ROOT_PROCESS_RANK, MPI_COMM_WORLD);
+  printf("worker: %d recevied brodcast init, master sequence: %s print matrix:\n", rank, initBuffer.mainSequence);
+  printMatrix1D(initBuffer.scoreMat, SCORE_TABLE_ROWS, SCORE_TABLE_COLS);
   
   WorkerPayload receivedBuffer;
   MPI_Datatype workerPayload;
   int workerBlockLengths[2] = { MAX_CHARACTERS_SEQ, 1 };
   createWorkerPayloadType(&workerPayload, workerBlockLengths);
+  receivedBuffer.sequence = (char*) malloc(MAX_CHARACTERS_SEQ);
 
   ResultPayload sendBuffer;
   MPI_Datatype resultPayload;
   int resultBlockLengths[5] = { 1, 1, 1, 1, MAX_CHARACTERS_SEQ };
-  createWorkerPayloadType(&workerPayload, resultBlockLengths);
+  createResultPayloadType(&resultPayload, resultBlockLengths);
+  sendBuffer.sequence = (char*) malloc(MAX_CHARACTERS_SEQ);
 
   MPI_Status status;
   int tag;
@@ -36,9 +43,11 @@ void workerProcess(int rank) {
     MPI_Recv(
       &receivedBuffer, 1, workerPayload, ROOT_PROCESS_RANK, MPI_ANY_TAG, MPI_COMM_WORLD, &status
     );
+    printf("rank: %d, recevied new sequence: %s\n", rank, receivedBuffer.sequence);
     tag = status.MPI_TAG;
     if (tag == WORK) {
-      strcpy(&sendBuffer.sequence, &receivedBuffer.sequence);
+      strcpy(sendBuffer.sequence, receivedBuffer.sequence);
+      printf("rank: %d, processing sequence: %s\n", rank, sendBuffer.sequence);
       sendBuffer.index = receivedBuffer.index;
       calculateMaxAlignmentScore(initBuffer.mainSequence, receivedBuffer.sequence, &sendBuffer, initBuffer.scoreMat);
       MPI_Send(
@@ -49,6 +58,7 @@ void workerProcess(int rank) {
 }
 
 void masterProcess(int numOfProc, int argc, char** argv) {
+  printf("in master process\n");
   int** scoreMat;
   char** sequences;
   int numOfSequences, taskSent = 0, taskDone = 0;
@@ -73,40 +83,67 @@ void masterProcess(int numOfProc, int argc, char** argv) {
 
   MPI_Status status;
 
+  InitializePayload initSendBuffer;
   MPI_Datatype initializePayload;
   int initBlockLengths[2] = { SCORE_TABLE_ROWS * SCORE_TABLE_COLS, MAX_CHARACTERS_SEQ1 };
   createInitializePayloadType(&initializePayload, initBlockLengths);
+  initSendBuffer.scoreMat = (int*) malloc(SCORE_TABLE_ROWS * SCORE_TABLE_COLS * sizeof(int));
+  initSendBuffer.mainSequence = (char*) malloc( MAX_CHARACTERS_SEQ1);
+  initSendBuffer.scoreMat = *scoreMat;
 
-  MPI_Bcast(&(InitializePayload){ scoreMat, sequences[0] }, 1, initializePayload, ROOT_PROCESS_RANK, MPI_COMM_WORLD);
+  for (int row = 0; row < SCORE_TABLE_ROWS; row++) {
+      for (int col = 0; col < SCORE_TABLE_COLS; col++) {
+          *(initSendBuffer.scoreMat + (row * SCORE_TABLE_COLS) + col) = scoreMat[row][col];
+      }
+  }
+  strcpy(initSendBuffer.mainSequence, sequences[0]);
+  printf("master sending brodcast message, main sequence: %s, prinit matrix:\n", initSendBuffer.mainSequence);
+  printMatrix1D(initSendBuffer.scoreMat, SCORE_TABLE_ROWS, SCORE_TABLE_COLS);
+  MPI_Bcast(&initSendBuffer, 1, initializePayload, ROOT_PROCESS_RANK, MPI_COMM_WORLD);
   
+  WorkerPayload workerSendBuffer;
   MPI_Datatype workerPayload;
   int workerBlockLengths[2] = { MAX_CHARACTERS_SEQ, 1 };
   createWorkerPayloadType(&workerPayload, workerBlockLengths);
+  workerSendBuffer.sequence = (char*) malloc(MAX_CHARACTERS_SEQ);
 
+  ResultPayload results[numOfSequences];
+  ResultPayload resultBuffer;
   MPI_Datatype resultPayload;
   int resultBlockLengths[5] = { 1, 1, 1, 1, MAX_CHARACTERS_SEQ };
-  createWorkerPayloadType(&workerPayload, resultBlockLengths);
+  createResultPayloadType(&resultPayload, resultBlockLengths);
   
+  resultBuffer.sequence = (char*) malloc(MAX_CHARACTERS_SEQ);
+  for (int i = 0; i < numOfSequences; i++) {
+    results[i].sequence = (char*) malloc(MAX_CHARACTERS_SEQ);
+  }
 
   for (int rank = 1; rank < numOfProc; rank++) {
     if (rank <= numOfSequences) {
+      workerSendBuffer.index = rank;
+      strcpy(workerSendBuffer.sequence, sequences[rank]);
+      printf("static loop sending %s to rank: %d, task sent: %d\n", workerSendBuffer.sequence, rank, taskSent);
       MPI_Send(
-        &(WorkerPayload){ sequences[rank], rank }, 1, workerPayload, rank, WORK, MPI_COMM_WORLD
+        &workerSendBuffer, 1, workerPayload, rank, WORK, MPI_COMM_WORLD
       );
       taskSent++;
     }
   }
 
-  ResultPayload results[numOfSequences];
-  ResultPayload resultBuffer;
 
   while(taskDone <= numOfSequences) {  
+    printf("In dynaamic loop, task sent: %d\n", taskSent);
+
     MPI_Recv(&resultBuffer, 1, resultPayload, MPI_ANY_SOURCE, FINISH, MPI_COMM_WORLD, &status);
+    printf("recevied result from worker: %d, sequence: %s, max score: %d, k: %d, offst: %d tasks done/sent: %d/%d\n",
+    status.MPI_SOURCE, resultBuffer.sequence, resultBuffer.maxScore, resultBuffer.offset, resultBuffer.k, taskDone, taskSent);
     results[resultBuffer.index] = resultBuffer;
     taskDone++;
     if (taskSent < numOfSequences) {
+      workerSendBuffer.index = taskSent;
+      strcpy(workerSendBuffer.sequence, sequences[taskSent]);
       MPI_Send(
-        &(WorkerPayload){ sequences[taskSent], taskSent }, 1, workerPayload, status.MPI_SOURCE, WORK, MPI_COMM_WORLD
+        &workerSendBuffer, 1, workerPayload, status.MPI_SOURCE, WORK, MPI_COMM_WORLD
       );
       taskSent++;
     }
@@ -114,7 +151,10 @@ void masterProcess(int numOfProc, int argc, char** argv) {
 
   // notify all workers to stop working
   for (int rank = 1; rank < numOfProc; rank++) {
-    MPI_Send(&(WorkerPayload){ "", 0 }, 0, workerPayload, rank, STOP, MPI_COMM_WORLD);
+    // dummy value
+    workerSendBuffer.index = -1;
+    strcpy(workerSendBuffer.sequence, "");
+    MPI_Send(&workerSendBuffer, 0, workerPayload, rank, STOP, MPI_COMM_WORLD);
   }
 
   printResults(results, numOfSequences);
