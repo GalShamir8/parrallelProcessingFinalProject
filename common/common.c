@@ -37,8 +37,8 @@ void readLine(FILE* fileDescriptor, char* str, int maximumCharacters) {
 char** readSeqInput(char* filePath, int* numOfSequences) {
   FILE *fileDescriptor;
   if ((fileDescriptor = fopen(filePath, "r")) == NULL) {
-  printf("Error! opening file");
-  exit(1);
+    printf("Error! opening file");
+    exit(1);
   }
   char seq1[MAX_CHARACTERS_SEQ1];
   readLine(fileDescriptor, seq1, MAX_CHARACTERS_SEQ1);

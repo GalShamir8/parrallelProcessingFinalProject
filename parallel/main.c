@@ -18,8 +18,6 @@ void workerProcess(int rank) {
   createInitializePayloadType(&initializePayload, initBlockLengths);
 
   InitializePayload initBuffer;
-  initBuffer.scoreMat = (int*) malloc(SCORE_TABLE_ROWS * SCORE_TABLE_COLS * sizeof(int));
-  initBuffer.mainSequence = (char*) malloc( MAX_CHARACTERS_SEQ1);
   MPI_Bcast(&initBuffer, 1, initializePayload, ROOT_PROCESS_RANK, MPI_COMM_WORLD);
   printf("worker: %d recevied brodcast init, master sequence: %s print matrix:\n", rank, initBuffer.mainSequence);
   printMatrix1D(initBuffer.scoreMat, SCORE_TABLE_ROWS, SCORE_TABLE_COLS);
@@ -28,13 +26,11 @@ void workerProcess(int rank) {
   MPI_Datatype workerPayload;
   int workerBlockLengths[2] = { MAX_CHARACTERS_SEQ, 1 };
   createWorkerPayloadType(&workerPayload, workerBlockLengths);
-  receivedBuffer.sequence = (char*) malloc(MAX_CHARACTERS_SEQ);
 
   ResultPayload sendBuffer;
   MPI_Datatype resultPayload;
   int resultBlockLengths[5] = { 1, 1, 1, 1, MAX_CHARACTERS_SEQ };
   createResultPayloadType(&resultPayload, resultBlockLengths);
-  sendBuffer.sequence = (char*) malloc(MAX_CHARACTERS_SEQ);
 
   MPI_Status status;
   int tag;
@@ -87,9 +83,6 @@ void masterProcess(int numOfProc, int argc, char** argv) {
   MPI_Datatype initializePayload;
   int initBlockLengths[2] = { SCORE_TABLE_ROWS * SCORE_TABLE_COLS, MAX_CHARACTERS_SEQ1 };
   createInitializePayloadType(&initializePayload, initBlockLengths);
-  initSendBuffer.scoreMat = (int*) malloc(SCORE_TABLE_ROWS * SCORE_TABLE_COLS * sizeof(int));
-  initSendBuffer.mainSequence = (char*) malloc( MAX_CHARACTERS_SEQ1);
-  initSendBuffer.scoreMat = *scoreMat;
 
   for (int row = 0; row < SCORE_TABLE_ROWS; row++) {
       for (int col = 0; col < SCORE_TABLE_COLS; col++) {
@@ -105,18 +98,12 @@ void masterProcess(int numOfProc, int argc, char** argv) {
   MPI_Datatype workerPayload;
   int workerBlockLengths[2] = { MAX_CHARACTERS_SEQ, 1 };
   createWorkerPayloadType(&workerPayload, workerBlockLengths);
-  workerSendBuffer.sequence = (char*) malloc(MAX_CHARACTERS_SEQ);
 
   ResultPayload results[numOfSequences];
   ResultPayload resultBuffer;
   MPI_Datatype resultPayload;
   int resultBlockLengths[5] = { 1, 1, 1, 1, MAX_CHARACTERS_SEQ };
   createResultPayloadType(&resultPayload, resultBlockLengths);
-  
-  resultBuffer.sequence = (char*) malloc(MAX_CHARACTERS_SEQ);
-  for (int i = 0; i < numOfSequences; i++) {
-    results[i].sequence = (char*) malloc(MAX_CHARACTERS_SEQ);
-  }
 
   for (int rank = 1; rank < numOfProc; rank++) {
     if (rank <= numOfSequences) {
@@ -131,7 +118,7 @@ void masterProcess(int numOfProc, int argc, char** argv) {
   }
 
 
-  while(taskDone <= numOfSequences) {  
+  while(taskDone < numOfSequences) {  
     printf("In dynaamic loop, task sent: %d\n", taskSent);
 
     MPI_Recv(&resultBuffer, 1, resultPayload, MPI_ANY_SOURCE, FINISH, MPI_COMM_WORLD, &status);

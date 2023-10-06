@@ -11,12 +11,12 @@
 #define ROOT_PROCESS_RANK 0
 
 typedef struct {
-  int* scoreMat;
-  char* mainSequence;
+  int scoreMat[SCORE_TABLE_ROWS * SCORE_TABLE_COLS];
+  char mainSequence[MAX_CHARACTERS_SEQ1];
 } InitializePayload;
 
 typedef struct {
-  char* sequence;
+  char sequence[MAX_CHARACTERS_SEQ];
   int index;
 } WorkerPayload;
 
@@ -25,7 +25,7 @@ typedef struct {
   int offset;
   int k;
   int index;
-  char* sequence;
+  char sequence[MAX_CHARACTERS_SEQ];
 } ResultPayload;
 
 /*
